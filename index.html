@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>FitProgress</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f5f7;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif}
+header{background:#111827;color:white;padding:calc(18px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:10}h1{margin:0;font-size:28px}header p{margin:4px 0 0;color:#cbd5e1;font-size:13px}
+.nav{display:flex;gap:7px;overflow-x:auto;margin-top:14px}.nav button{white-space:nowrap;background:#374151;color:#fff;border:0;border-radius:12px;padding:10px 12px;font-weight:700}
+main{max-width:760px;margin:auto;padding:14px 14px 30px}.page{display:none}.page.active{display:block}
+.card{background:white;border:1px solid #e5e7eb;border-radius:20px;padding:16px;margin-bottom:14px}.hero{background:linear-gradient(135deg,#111827,#263244);color:#fff;border:0}
+h2{margin:0 0 6px;font-size:22px}h3{margin:0 0 10px}.muted{color:#6b7280}.hero .muted{color:#cbd5e1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f8fafc;border:1px solid #e5e7eb;border-radius:15px;padding:13px}.stat b{display:block;font-size:23px}.stat span{font-size:12px;color:#6b7280}
+button{border:0;border-radius:13px;padding:12px 14px;font-size:14px;font-weight:750;background:#16a34a;color:white}.secondary{background:#eef2f7;color:#111827}.danger{background:#dc2626}.full{width:100%}
+.chips{display:flex;gap:8px;overflow:auto}.chip{background:#eef2f7;color:#374151;white-space:nowrap}.chip.active{background:#111827;color:#fff}
+.exercise{border:1px solid #e5e7eb;border-radius:17px;padding:14px;margin:10px 0}.tag{display:inline-block;background:#ecfdf5;color:#166534;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
+.form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.form label{font-size:11px;color:#6b7280}.form input{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}
+input,select{font:inherit}.notice{background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;border-radius:13px;padding:11px;font-size:13px;margin:9px 0}
+.photoGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.photo img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:15px}.photo{position:relative}.photo button{position:absolute;top:6px;right:6px;padding:6px 9px;background:#dc2626}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:8px}.compare img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:14px}
+.small{font-size:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.empty{text-align:center;padding:25px;color:#6b7280}
+</style>
+</head>
+<body>
+<header>
+<h1>FitProgress 💪</h1><p>Din träningslogg och progression</p>
+<div class="nav">
+<button onclick="page('home')">🏠 Hem</button><button onclick="page('train')">🏋️ Träning</button><button onclick="page('photos')">📸 Bilder</button><button onclick="page('history')">📈 Historik</button><button onclick="page('settings')">⚙️ Inställningar</button>
+</div>
+</header>
+<main>
+<section id="home" class="page active">
+<div class="card hero"><div class="muted small">VÄLKOMMEN TILL FITPROGRESS</div><h2 id="today"></h2><p>Fokusera på att bli starkare över tid.</p><button class="full" onclick="page('train')">Starta träningspass</button></div>
+<div class="grid">
+<div class="stat"><b id="lastWeight">—</b><span>senaste kroppsvikt kg</span></div>
+<div class="stat"><b id="sessions">0</b><span>träningspass</span></div>
+<div class="stat"><b id="sets">0</b><span>totala set</span></div>
+<div class="stat"><b id="exercises">0</b><span>övningar loggade</span></div>
+</div>
+<div class="card"><h3>Senaste progression</h3><div id="homeRec" class="notice">När du loggar träning börjar FitProgress följa din progression.</div></div>
+<div class="card"><h3>Kroppsvikt</h3><div class="form"><div><label>Kg</label><input id="bodyWeight" type="number" step=".1" placeholder="80.0"></div><div></div><button onclick="saveBodyWeight()">Spara</button></div></div>
+</section>
+
+<section id="train" class="page">
+<div class="card"><h2>Välj muskelgrupp</h2><p class="muted">4–5 övningar per grupp. Välj en övning och logga dina arbetsset.</p><div id="muscles" class="chips"></div></div>
+<div id="exerciseList"></div>
+</section>
+
+<section id="photos" class="page">
+<div class="card"><h2>Progressbilder 📸</h2><p class="muted">Bilderna sparas lokalt på den här enheten.</p>
+<label style="display:block"><button class="full" type="button" onclick="document.getElementById('photoInput').click()">📷 Ta eller välj bild</button><input id="photoInput" type="file" accept="image/*" capture="environment" hidden></label></div>
+<div class="card"><h3>Före / efter</h3><div class="form" style="grid-template-columns:1fr 1fr"><select id="before"></select><select id="after"></select></div><div id="compare" style="margin-top:10px"></div></div>
+<div id="photoGrid" class="photoGrid"></div>
+</section>
+
+<section id="history" class="page"><div class="card"><h2>Historik 📈</h2><div id="historyList"></div></div></section>
+
+<section id="settings" class="page">
+<div class="card"><h2>Inställningar</h2><p class="muted">FitProgress lagrar dina uppgifter lokalt i webbläsaren.</p></div>
+<div class="card"><h3>Exportera</h3><button class="full" onclick="exportData()">Spara säkerhetskopia</button></div>
+<div class="card"><h3>Radera</h3><button class="danger full" onclick="wipe()">Radera all FitProgress-data</button></div>
+</section>
+</main>
+<script>
+const plans={
+Bröst:[["Bänkpress",3,"6–10"],["Lutande hantelpress",3,"8–12"],["Bröstpress",3,"8–12"],["Kabel-flyes",3,"10–15"],["Armhävningar",2,"8–15"]],
+Rygg:[["Latsdrag",3,"8–12"],["Sittande kabelrodd",3,"8–12"],["Skivstångsrodd",3,"6–10"],["Enarms hantelrodd",3,"8–12"],["Chins",3,"6–12"]],
+Axlar:[["Axelpress",3,"6–10"],["Hantelpress",3,"8–12"],["Sidolyft",3,"10–15"],["Omvända flyes",3,"10–15"],["Face pulls",3,"12–15"]],
+Ben:[["Knäböj",3,"6–10"],["Benpress",3,"8–12"],["Rumänska marklyft",3,"6–10"],["Lårcurl",3,"10–15"],["Benspark",3,"10–15"]],
+Armar:[["Bicepscurl",3,"8–12"],["Hammercurl",3,"8–12"],["Preacher curl",3,"8–12"],["Triceps pushdown",3,"8–12"],["Triceps över huvudet",3,"10–15"]],
+Mage:[["Cable crunch",3,"10–15"],["Hängande benlyft",3,"8–15"],["Crunches",3,"10–15"],["Ab-wheel",3,"6–12"],["Planka",3,"30–60 sek"]]
+};
+let db=JSON.parse(localStorage.getItem("fitprogress_v3")||'{"logs":[],"weights":[],"photos":[]}');
+const save=()=>localStorage.setItem("fitprogress_v3",JSON.stringify(db));
+const today=()=>new Date().toISOString().slice(0,10);
+const dateText=d=>new Date(d+"T12:00:00").toLocaleDateString("sv-SE",{day:"numeric",month:"short",year:"numeric"});
+function page(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");if(id==="home")home();if(id==="train")initTrain();if(id==="photos")renderPhotos();if(id==="history")renderHistory();}
+function home(){
+ document.getElementById("today").textContent=new Date().toLocaleDateString("sv-SE",{weekday:"long",day:"numeric",month:"long"});
+ document.getElementById("lastWeight").textContent=db.weights.length?db.weights.at(-1).value:"—";
+ document.getElementById("sessions").textContent=new Set(db.logs.map(x=>x.date)).size;
+ document.getElementById("sets").textContent=db.logs.reduce((a,x)=>a+x.sets,0);
+ document.getElementById("exercises").textContent=new Set(db.logs.map(x=>x.key)).size;
+ let x=db.logs.at(-1);document.getElementById("homeRec").textContent=x?recommend(x):"När du loggar träning börjar FitProgress följa din progression.";
+}
+function saveBodyWeight(){let v=+document.getElementById("bodyWeight").value;if(v>0){db.weights.push({date:today(),value:v});save();home();document.getElementById("bodyWeight").value="";}}
+function initTrain(){let box=document.getElementById("muscles");box.innerHTML="";Object.keys(plans).forEach((m,i)=>{let b=document.createElement("button");b.textContent=m;b.className="chip"+(!i?" active":"");b.onclick=()=>{document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");renderExercises(m)};box.appendChild(b)});renderExercises("Bröst");}
+function renderExercises(m){
+ let list=document.getElementById("exerciseList");list.innerHTML="";
+ plans[m].forEach((e,i)=>{
+  let prev=[...db.logs].reverse().find(x=>x.key===m+"|"+e[0]);
+  let rec=prev&&prev.reps>=maxRep(e[2])?`<div class="notice">💪 Du nådde övre repmålet. Prova ${nextWeight(prev.weight)} kg nästa gång.</div>`:"";
+  let d=document.createElement("div");d.className="card exercise";
+  d.innerHTML=`<div class="row"><div><h3>${e[0]}</h3><span class="tag">${e[1]} set • ${e[2]} reps</span></div><span class="small muted">${prev?`Senast ${prev.weight} kg × ${prev.reps}`:"Ny övning"}</span></div>${rec}
+  <div class="form" style="margin-top:10px"><div><label>Vikt kg</label><input id="w${i}" type="number" step=".5" value="${prev?.weight||""}"></div><div><label>Reps</label><input id="r${i}" type="number" value="${prev?.reps||""}"></div><div><label>Set</label><input id="s${i}" type="number" value="${prev?.sets||e[1]}"></div></div>
+  <button class="full" style="margin-top:9px" onclick="log('${m}','${e[0]}',${i},'${e[2]}')">Spara övning</button>`;
+  list.appendChild(d);
+ });
+}
+function maxRep(range){let p=range.split("–");return Number(p[1]||p[0]);}
+function nextWeight(w){return (w+(w>=80?5:2.5)).toFixed(1).replace(".0","");}
+function recommend(x){let max=maxRep(x.range);return x.reps>=max?`Öka ${x.exercise}: nästa pass kan du prova ${nextWeight(x.weight)} kg.`:`Fortsätt med ${x.weight} kg och försök nå ${max} reps med bra teknik.`}
+function log(m,e,i,range){let w=+document.getElementById("w"+i).value,r=+document.getElementById("r"+i).value,s=+document.getElementById("s"+i).value;if(!w||!r||!s)return alert("Fyll i vikt, reps och set.");db.logs.push({date:today(),key:m+"|"+e,muscle:m,exercise:e,weight:w,reps:r,sets:s,range});save();alert(recommend(db.logs.at(-1)));home();renderExercises(m);}
+document.getElementById("photoInput").addEventListener("change",ev=>{let f=ev.target.files?.[0];if(!f)return;let r=new FileReader();r.onload=()=>{db.photos.unshift({date:today(),src:r.result});save();renderPhotos();};r.readAsDataURL(f);});
+function renderPhotos(){
+ let opts=db.photos.map((p,i)=>`<option value="${i}">${dateText(p.date)}</option>`).join("");document.getElementById("before").innerHTML=opts;document.getElementById("after").innerHTML=opts;
+ if(db.photos.length>1){document.getElementById("before").value=1;document.getElementById("after").value=0;}
+ document.getElementById("before").onchange=compare;document.getElementById("after").onchange=compare;compare();
+ document.getElementById("photoGrid").innerHTML=db.photos.length?db.photos.map((p,i)=>`<div class="photo"><img src="${p.src}"><div class="small muted">${dateText(p.date)}</div><button onclick="delPhoto(${i})">×</button></div>`).join(""):'<div class="empty" style="grid-column:1/-1">Inga bilder ännu.</div>';
+}
+function compare(){if(!db.photos.length){document.getElementById("compare").innerHTML='<div class="empty">Lägg till bilder för att jämföra.</div>';return}let b=+document.getElementById("before").value||0,a=+document.getElementById("after").value||0;document.getElementById("compare").innerHTML=`<div class="compare"><img src="${db.photos[b].src}"><img src="${db.photos[a].src}"></div>`;}
+function delPhoto(i){if(confirm("Radera bilden?")){db.photos.splice(i,1);save();renderPhotos();}}
+function renderHistory(){let a=[...db.logs].reverse();document.getElementById("historyList").innerHTML=a.length?a.map(x=>`<div class="exercise"><div class="row"><b>${x.exercise}</b><b>${x.weight} kg × ${x.reps} × ${x.sets}</b></div><div class="small muted">${x.muscle} • ${dateText(x.date)}</div></div>`).join(""):'<div class="empty">Ingen träning loggad ännu.</div>';}
+function exportData(){let b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="FitProgress-backup.json";a.click();}
+function wipe(){if(confirm("Radera all FitProgress-data?")){localStorage.removeItem("fitprogress_v3");location.reload();}}
+home();
+</script>
+</body>
+</html>
